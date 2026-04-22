@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>MultiView Video Player | 10 Videos Simultaneously</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #0a0f1e 0%, #0a0515 100%);
+            font-family: 'Inter', sans-serif;
+            min-height: 100vh;
+            color: #fff;
+        }
+        
+        .header {
+            background: rgba(18, 22, 35, 0.95);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(243, 156, 18, 0.3);
+            padding: 20px 30px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        
+        .header h1 {
+            font-size: 28px;
+            background: linear-gradient(135deg, #f39c12, #e67e22);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+        
+        .header p {
+            color: #888;
+            font-size: 14px;
+            margin-top: 5px;
+        }
+        
+        .control-bar {
+            display: flex;
+            gap: 15px;
+            padding: 20px 30px;
+            background: rgba(18, 22, 35, 0.8);
+            border-bottom: 1px solid rgba(243, 156, 18, 0.2);
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        
+        .control-btn {
+            background: linear-gradient(135deg, #f39c12, #e67e22);
+            border: none;
+            color: white;
+            font-weight: 600;
+            padding: 12px 24px;
+            border-radius: 40px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 14px;
+        }
+        
+        .control-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(243, 156, 18, 0.5);
+        }
+        
+        .control-btn.secondary {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(243, 156, 18, 0.3);
+        }
+        
+        .control-btn.danger {
+            background: rgba(231, 76, 60, 0.8);
+        }
+        
+        .control-btn.warning {
+            background: rgba(52, 152, 219, 0.8);
+        }
+        
+        .control-btn.switch-btn {
+            background: linear-gradient(135deg, #2ecc71, #27ae60);
+        }
+        
+        .videos-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 20px;
+            padding: 30px;
+        }
+        
+        .video-card {
+            background: rgba(18, 22, 35, 0.85);
+            backdrop-filter: blur(12px);
+            border-radius: 16px;
+            border: 1px solid rgba(243, 156, 18, 0.2);
+            overflow: hidden;
+            transition: all 0.3s;
+        }
+        
+        .video-card:hover {
+            border-color: rgba(243, 156, 18, 0.5);
+            transform: translateY(-3px);
+        }
+        
+        .video-header {
+            padding: 12px 15px;
+            background: rgba(0, 0, 0, 0.3);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(243, 156, 18, 0.2);
+        }
+        
+        .video-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #f39c12;
+        }
+        
+        .video-number {
+            background: rgba(243, 156, 18, 0.2);
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+        }
+        
+        .video-container {
+            position: relative;
+            width: 100%;
+            background: #000;
+        }
+        
+        .video-container iframe,
+        .video-container video {
+            width: 100%;
+            height: 250px;
+            border: none;
+        }
+        
+        .video-controls {
+            padding: 12px 15px;
+            display: flex;
+            gap: 10px;
+            border-top: 1px solid rgba(243, 156, 18, 0.2);
+            flex-wrap: wrap;
+        }
+        
+        .video-url-input {
+            flex: 1;
+            background: rgba(10, 12, 25, 0.8);
+            border: 1px solid rgba(243, 156, 18, 0.3);
+            border-radius: 30px;
+            padding: 8px 15px;
+            color: white;
+            font-size: 12px;
+            outline: none;
+        }
+        
+        .video-url-input:focus {
+            border-color: #f39c12;
+        }
+        
+        .video-play-btn, .video-pause-btn {
+            background: rgba(243, 156, 18, 0.2);
+            border: 1px solid rgba(243, 156, 18, 0.3);
+            color: #f39c12;
+            padding: 6px 12px;
+            border-radius: 30px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.3s;
+        }
+        
+        .video-play-btn:hover, .video-pause-btn:hover {
+            background: rgba(243, 156, 18, 0.4);
+        }
+        
+        /* Current Set Indicator */
+        .set-indicator {
+            background: rgba(0, 0, 0, 0.5);
+            padding: 8px 20px;
+            border-radius: 40px;
+            font-size: 13px;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .set-indicator i {
+            color: #f39c12;
+        }
+        
+        @media (max-width: 900px) {
+            .videos-grid {
+                grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+                padding: 15px;
+                gap: 15px;
+            }
+            .control-bar {
+                padding: 15px;
+            }
+            .video-container iframe,
+            .video-container video {
+                height: 200px;
+            }
+        }
+        
+        @media (max-width: 600px) {
+            .videos-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(46, 204, 113, 0.9);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 40px;
+            font-size: 14px;
+            z-index: 1000;
+            animation: fadeInOut 2s ease-in-out;
+        }
+        
+        @keyframes fadeInOut {
+            0% { opacity: 0; transform: translateX(-50%) translateY(20px); }
+            15% { opacity: 1; transform: translateX(-50%) translateY(0); }
+            85% { opacity: 1; transform: translateX(-50%) translateY(0); }
+            100% { opacity: 0; transform: translateX(-50%) translateY(20px); }
+        }
+        
+        .footer {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+            font-size: 12px;
+            border-top: 1px solid rgba(243, 156, 18, 0.2);
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1><i class="fas fa-video"></i> MultiView Video Player</h1>
+        <p>10 Videos Simultaneously • Switch between two video sets • YouTube & MP4 Support</p>
+    </div>
+    
+    <div class="control-bar">
+        <button id="playAllBtn" class="control-btn"><i class="fas fa-play"></i> Play All</button>
+        <button id="pauseAllBtn" class="control-btn secondary"><i class="fas fa-pause"></i> Pause All</button>
+        <button id="stopAllBtn" class="control-btn danger"><i class="fas fa-stop"></i> Stop All</button>
+        <button id="resetAllBtn" class="control-btn warning"><i class="fas fa-sync-alt"></i> Reset</button>
+        <button id="switchSetBtn" class="control-btn switch-btn"><i class="fas fa-exchange-alt"></i> Switch to Second Set</button>
+        <div class="set-indicator" id="setIndicator">
+            <i class="fas fa-layer-group"></i> Current: <span id="currentSetName">Set 1</span>
+        </div>
+    </div>
+    
+    <div class="videos-grid" id="videosGrid">
+        <!-- 10 video players will be generated here -->
+    </div>
+    
+    <div class="footer">
+        <i class="fas fa-info-circle"></i> 10 videos playing simultaneously • Click "Switch" to change all videos at once
+    </div>
+
+    <script>
+        // ==================== VIDEO URLS (YOUR LINKS) ====================
+        // First Set - Main Videos (10 videos)
+        const firstSetVideos = [
+            "https://youtu.be/b3Sg9D46dOo?si=MsZq_Br4yYzmwJHw",
+            "https://youtu.be/SjCFFOhjSB0?si=BZvxKk69NAK5t9mZ",
+            "https://youtu.be/fvZLEZ8q2Lg?si=1bgORJH048_hz85Y",
+            "https://youtu.be/MKqCJLP4pRE?si=aldz11ycEKpR1Rh8",
+            "https://youtu.be/1wIbCJqNNGw?si=9qgQNc7--HA86trd",
+            "https://youtu.be/en_jZ5GvwOU?si=UaKAjCKS9T3M3tNu",
+            "https://youtu.be/1IATt6Xqs3k?si=UB7JS8Z3dRy6u9b1",
+            "https://youtu.be/NEcV_KHQgMs?si=7OGFEnD_M_tXKJgX",
+            "https://youtu.be/HMuCItec0C0?si=1OVWsFBXU316Kn1R",
+            "https://youtu.be/HmqwsluAaTM?si=f9OKKNXerUuftYCB"
+        ];
+        
+        // Second Set - Switch Videos (10 videos)
+        const secondSetVideos = [
+            "https://youtu.be/Twr7DX61PVk?si=eALQO0kXzXe76zQ1",
+            "https://youtu.be/H4CJ64PuYBM?si=gQm6qFkrLYuo-8Vw",
+            "https://youtu.be/29c22lTy5gI?si=vTFVBwesGVijQD63",
+            "https://youtu.be/gorV8cl3sdg?si=dRYvKCJyIN0JDRba",
+            "https://youtu.be/-YitmxK6kls?si=6vNjw8vEx1zvLPrB",
+            "https://youtu.be/_BH2mOkSuj8?si=c-vAODbSpodSwKwC",
+            "https://youtu.be/bg69mcA03_w?si=hzOr9ghCdPhv5ZgN",
+            "https://youtu.be/Kxd9Iai71OI?si=xRvG8oMODPPGb4ep",
+            "https://youtu.be/NAXwHWKk-24?si=c2xaOfwYfQ6huZWJ",
+            "https://youtu.be/qHsBiR7XQ1w?si=XY_pisjjguPQQ_Qc"
+        ];
+        
+        let currentSet = 1; // 1 = First Set, 2 = Second Set
+        let videoElements = [];
+        let currentVideoUrls = [...firstSetVideos];
+        
+        function showToast(message) {
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            toast.innerHTML = `<i class="fas fa-check-circle"></i> ${message}`;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 2000);
+        }
+        
+        function convertToEmbedUrl(url) {
+            // Convert YouTube URL to embed URL
+            let videoId = null;
+            
+            // Handle youtu.be format
+            if (url.includes('youtu.be/')) {
+                const match = url.match(/youtu\.be\/([^?&]+)/);
+                if (match) videoId = match[1];
+            }
+            // Handle youtube.com/watch?v= format
+            else if (url.includes('youtube.com/watch')) {
+                const match = url.match(/[?&]v=([^&]+)/);
+                if (match) videoId = match[1];
+            }
+            // Handle youtube.com/embed/ format
+            else if (url.includes('youtube.com/embed/')) {
+                const match = url.match(/embed\/([^?&]+)/);
+                if (match) videoId = match[1];
+            }
+            
+            if (videoId) {
+                return `https://www.youtube.com/embed/${videoId}?enablejsapi=1&autoplay=0&rel=0`;
+            }
+            
+            // If not YouTube, return original URL
+            return url;
+        }
+        
+        function createVideoPlayer(index, videoUrl) {
+            const card = document.createElement('div');
+            card.className = 'video-card';
+            card.setAttribute('data-index', index);
+            
+            const embedUrl = convertToEmbedUrl(videoUrl);
+            const isYouTube = embedUrl.includes('youtube.com/embed');
+            
+            card.innerHTML = `
+                <div class="video-header">
+                    <span class="video-title"><i class="fas fa-tv"></i> Player ${index + 1}</span>
+                    <span class="video-number">#${String(index + 1).padStart(2, '0')}</span>
+                </div>
+                <div class="video-container" id="videoContainer_${index}">
+                    ${isYouTube ? 
+                        `<iframe id="video_${index}" src="${embedUrl}" style="width: 100%; height: 250px; border: none;" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>` :
+                        `<video id="video_${index}" src="${embedUrl}" style="width: 100%; height: 250px; background: #000;" controls></video>`
+                    }
+                </div>
+                <div class="video-controls">
+                    <input type="text" class="video-url-input" id="urlInput_${index}" placeholder="Paste video URL (YouTube, MP4, etc.)" value="${videoUrl}">
+                    <button class="video-play-btn" data-index="${index}" data-action="play"><i class="fas fa-play"></i> Play</button>
+                    <button class="video-pause-btn" data-index="${index}" data-action="pause"><i class="fas fa-pause"></i> Pause</button>
+                </div>
+            `;
+            
+            return card;
+        }
+        
+        function initVideoPlayers() {
+            const grid = document.getElementById('videosGrid');
+            grid.innerHTML = '';
+            videoElements = [];
+            
+            for (let i = 0; i < 10; i++) {
+                const player = createVideoPlayer(i, currentVideoUrls[i]);
+                grid.appendChild(player);
+                
+                // Store video/iframe element reference
+                const videoElement = document.getElementById(`video_${i}`);
+                if (videoElement) {
+                    videoElements.push(videoElement);
+                } else {
+                    videoElements.push(null);
+                }
+            }
+            
+            // Add event listeners to all buttons
+            document.querySelectorAll('.video-play-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const index = parseInt(btn.dataset.index);
+                    playVideo(index);
+                });
+            });
+            
+            document.querySelectorAll('.video-pause-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const index = parseInt(btn.dataset.index);
+                    pauseVideo(index);
+                });
+            });
+            
+            document.querySelectorAll('.video-url-input').forEach((input, idx) => {
+                input.addEventListener('change', (e) => {
+                    updateSingleVideo(idx, e.target.value);
+                });
+            });
+        }
+        
+        function playVideo(index) {
+            const video = videoElements[index];
+            if (video) {
+                if (video.tagName === 'IFRAME') {
+                    // For YouTube iframe, we need to use postMessage
+                    video.contentWindow.postMessage('{"event":"command","func":"playVideo","args":""}', '*');
+                } else {
+                    video.play().catch(e => console.log('Play error:', e));
+                }
+                showToast(`Player ${index + 1} playing`);
+            }
+        }
+        
+        function pauseVideo(index) {
+            const video = videoElements[index];
+            if (video) {
+                if (video.tagName === 'IFRAME') {
+                    video.contentWindow.postMessage('{"event":"command","func":"pauseVideo","args":""}', '*');
+                } else {
+                    video.pause();
+                }
+                showToast(`Player ${index + 1} paused`);
+            }
+        }
+        
+        function playAllVideos() {
+            videoElements.forEach((video, i) => {
+                if (video) {
+                    if (video.tagName === 'IFRAME') {
+                        video.contentWindow.postMessage('{"event":"command","func":"playVideo","args":""}', '*');
+                    } else {
+                        video.play().catch(e => console.log(`Play error on player ${i + 1}:`, e));
+                    }
+                }
+            });
+            showToast(`Playing all ${videoElements.length} videos`);
+        }
+        
+        function pauseAllVideos() {
+            videoElements.forEach((video, i) => {
+                if (video) {
+                    if (video.tagName === 'IFRAME') {
+                        video.contentWindow.postMessage('{"event":"command","func":"pauseVideo","args":""}', '*');
+                    } else {
+                        video.pause();
+                    }
+                }
+            });
+            showToast(`Paused all videos`);
+        }
+        
+        function stopAllVideos() {
+            videoElements.forEach((video, i) => {
+                if (video) {
+                    if (video.tagName === 'IFRAME') {
+                        video.contentWindow.postMessage('{"event":"command","func":"stopVideo","args":""}', '*');
+                    } else {
+                        video.pause();
+                        video.currentTime = 0;
+                    }
+                }
+            });
+            showToast(`Stopped all videos`);
+        }
+        
+        function resetAllVideos() {
+            loadSet(currentSet);
+            showToast(`Reset to ${currentSet === 1 ? 'Set 1' : 'Set 2'}`);
+        }
+        
+        function updateSingleVideo(index, url) {
+            if (!url || url.trim() === '') return;
+            
+            const container = document.getElementById(`videoContainer_${index}`);
+            const embedUrl = convertToEmbedUrl(url.trim());
+            const isYouTube = embedUrl.includes('youtube.com/embed');
+            
+            if (container) {
+                container.innerHTML = isYouTube ? 
+                    `<iframe id="video_${index}" src="${embedUrl}" style="width: 100%; height: 250px; border: none;" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>` :
+                    `<video id="video_${index}" src="${embedUrl}" style="width: 100%; height: 250px; background: #000;" controls></video>`;
+                
+                const newVideo = document.getElementById(`video_${index}`);
+                if (newVideo) videoElements[index] = newVideo;
+                showToast(`Player ${index + 1} URL updated`);
+            }
+        }
+        
+        function loadSet(setNumber) {
+            currentSet = setNumber;
+            const videosToLoad = setNumber === 1 ? firstSetVideos : secondSetVideos;
+            currentVideoUrls = [...videosToLoad];
+            
+            for (let i = 0; i < 10; i++) {
+                const container = document.getElementById(`videoContainer_${i}`);
+                const embedUrl = convertToEmbedUrl(videosToLoad[i]);
+                const isYouTube = embedUrl.includes('youtube.com/embed');
+                
+                if (container) {
+                    container.innerHTML = isYouTube ? 
+                        `<iframe id="video_${i}" src="${embedUrl}" style="width: 100%; height: 250px; border: none;" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>` :
+                        `<video id="video_${i}" src="${embedUrl}" style="width: 100%; height: 250px; background: #000;" controls></video>`;
+                    
+                    const newVideo = document.getElementById(`video_${i}`);
+                    if (newVideo) videoElements[i] = newVideo;
+                }
+                
+                const input = document.getElementById(`urlInput_${i}`);
+                if (input) input.value = videosToLoad[i];
+            }
+            
+            const setIndicator = document.getElementById('currentSetName');
+            const switchBtn = document.getElementById('switchSetBtn');
+            if (setIndicator) setIndicator.textContent = setNumber === 1 ? 'Set 1' : 'Set 2';
+            if (switchBtn) switchBtn.innerHTML = setNumber === 1 ? '<i class="fas fa-exchange-alt"></i> Switch to Set 2' : '<i class="fas fa-exchange-alt"></i> Switch to Set 1';
+            
+            showToast(`Loaded ${setNumber === 1 ? 'Set 1' : 'Set 2'} - 10 videos ready!`);
+        }
+        
+        function switchSet() {
+            const newSet = currentSet === 1 ? 2 : 1;
+            loadSet(newSet);
+        }
+        
+        // Global control event listeners
+        document.getElementById('playAllBtn').addEventListener('click', playAllVideos);
+        document.getElementById('pauseAllBtn').addEventListener('click', pauseAllVideos);
+        document.getElementById('stopAllBtn').addEventListener('click', stopAllVideos);
+        document.getElementById('resetAllBtn').addEventListener('click', resetAllVideos);
+        document.getElementById('switchSetBtn').addEventListener('click', switchSet);
+        
+        // Initialize
+        initVideoPlayers();
+        
+        console.log("MultiView Video Player Ready - 10 videos can play simultaneously!");
+        console.log("First Set: 10 YouTube videos loaded");
+        console.log("Click 'Switch' button to load second set of 10 videos");
+    </script>
+</body>
+</html>
